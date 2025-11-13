@@ -13,13 +13,13 @@ library(sf)
 
 # Input file path
 # folder name
-var <- "Ta"
+var <- "Tw"
 
 # Variable name 
-temp_var <- "tas"  
+temp_var <- "Tw"  
 
 # Degrees
-degree <- "4deg"
+degree <- "2deg"
 
 # Sats
 stat <- "mean"
@@ -35,6 +35,16 @@ lon_min <- 87  # Western boundary
 lon_max <- 94   # Eastern boundary
 lat_min <- 19    # Southern boundary
 lat_max <- 27     # Northern boundary
+
+Bang <- c(87, 94, 19, 27)
+
+# Region of interest - UAE
+#lon_min <- 45  # Western boundary
+#lon_max <- 60   # Eastern boundary
+#lat_min <- 20    # Southern boundary
+#lat_max <- 30     # Northern boundary
+
+UAE <- c(45, 60, 20, 30)
 
 # Output files
 output_file_mean <- paste0(degree, "_", temp_var, "_", stat, "_", "climate_contour_map_ensemble.png")
@@ -196,79 +206,79 @@ cat("\nsaving data as a raster...\n")
 
 library(terra)
 ensemble_mean_r <- rast(aperm(ensemble_mean))
-ext(ensemble_mean_r) <- c(87, 94, 19, 27)
+ext(ensemble_mean_r) <- Bang
 crs(ensemble_mean_r) <- "EPSG:4326"
-writeRaster(ensemble_mean_r, file = paste0(degree, "_", temp_var, "_", stat, "_", ".tiff"))
-# 
+writeRaster(ensemble_mean_r, file = paste0(degree, "_", temp_var, "_", stat, "_", ".tiff"), overwrite=TRUE)
+
 # # ---------------------------------------------------
 # # STEP 4: Prepare data for plotting
 # # ---------------------------------------------------
-# 
-# cat("\nPreparing ensemble data for plotting...\n")
-# 
-# # Create a data frame for ensemble mean
-# grid_mean <- expand.grid(lon = lon_subset, lat = lat_subset)
-# grid_mean$temp <- as.vector(ensemble_mean)
-# grid_mean <- grid_mean[!is.na(grid_mean$temp), ]
-# 
-# 
-# # Prepare range data
-# grid_range <- expand.grid(lon = lon_subset, lat = lat_subset)
-# grid_range$temp <- as.vector(ensemble_range)
-# grid_range <- grid_range[!is.na(grid_range$temp), ]
-# 
-# # ---------------------------------------------------
-# # STEP 4: Create contour maps
-# # ---------------------------------------------------
-# 
-# # Get country boundaries (shared across all plots)
-# world <- ne_countries(scale = "medium", returnclass = "sf")
-# world_cropped <- st_crop(world, xmin = lon_min, xmax = lon_max, 
-#                          ymin = lat_min, ymax = lat_max)
-# 
-# ## PLOT 1: Ensemble Mean
-# cat("Creating mean ensemble contour map...\n")
-# 
-# p_mean <- ggplot() +
-#   geom_contour_filled(data = grid_mean, aes(x = lon, y = lat, z = temp), bins = 20) +
-#   geom_contour(data = grid_mean, aes(x = lon, y = lat, z = temp), 
-#                color = "black", alpha = 0.3) +
-#   geom_sf(data = world_cropped, fill = NA, color = "black", linewidth = 0.5) +
-#   coord_sf(xlim = c(lon_min, lon_max), ylim = c(lat_min, lat_max), expand = FALSE) +
-#   labs(
-#     title = paste0(degree, "_", temp_var),
-#     subtitle = paste0("Region: ", lon_min, "°E to ", lon_max, "°E, ", 
-#                       lat_min, "°N to ", lat_max, "°N"),
-#     x = "Longitude",
-#     y = "Latitude",
-#     fill = "WBGT\n (°C)"
-#   ) +
-#   theme_minimal() +
-#   theme(
-#     plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-#     plot.subtitle = element_text(hjust = 0.5, size = 10),
-#     legend.position = "right",
-#     panel.background = element_rect(fill = "white"),
-#     panel.grid.major = element_line(color = "gray90", linewidth = 0.3)
-#   ) +
-#   scale_fill_viridis_d(option = "plasma")
-# 
+#
+ cat("\nPreparing ensemble data for plotting...\n")
+
+ # Create a data frame for ensemble mean
+ grid_mean <- expand.grid(lon = lon_subset, lat = lat_subset)
+ grid_mean$temp <- as.vector(ensemble_mean)
+ grid_mean <- grid_mean[!is.na(grid_mean$temp), ]
+
+
+ # Prepare range data
+ grid_range <- expand.grid(lon = lon_subset, lat = lat_subset)
+ grid_range$temp <- as.vector(ensemble_range)
+ grid_range <- grid_range[!is.na(grid_range$temp), ]
+
+ # ---------------------------------------------------
+ # STEP 4: Create contour maps
+ # ---------------------------------------------------
+
+ # Get country boundaries (shared across all plots)
+ world <- ne_countries(scale = "medium", returnclass = "sf")
+ world_cropped <- st_crop(world, xmin = lon_min, xmax = lon_max,
+                          ymin = lat_min, ymax = lat_max)
+
+ ## PLOT 1: Ensemble Mean
+ cat("Creating mean ensemble contour map...\n")
+
+ p_mean <- ggplot() +
+   geom_contour_filled(data = grid_mean, aes(x = lon, y = lat, z = temp), bins = 20) +
+   geom_contour(data = grid_mean, aes(x = lon, y = lat, z = temp),
+                color = "black", alpha = 0.3) +
+   geom_sf(data = world_cropped, fill = NA, color = "black", linewidth = 0.5) +
+   coord_sf(xlim = c(lon_min, lon_max), ylim = c(lat_min, lat_max), expand = FALSE) +
+   labs(
+     title = paste0(degree, "_", temp_var),
+     subtitle = paste0("Region: ", lon_min, "°E to ", lon_max, "°E, ",
+                       lat_min, "°N to ", lat_max, "°N"),
+     x = "Longitude",
+     y = "Latitude",
+     fill = "WBGT\n (°C)"
+   ) +
+   theme_minimal() +
+   theme(
+     plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+     plot.subtitle = element_text(hjust = 0.5, size = 10),
+    legend.position = "right",
+     panel.background = element_rect(fill = "white"),
+     panel.grid.major = element_line(color = "gray90", linewidth = 0.3)
+   ) +
+   scale_fill_viridis_d(option = "plasma")
+
 # ggsave(output_file_mean, plot = p_mean, width = 10, height = 8, dpi = 300)
-# cat("Ensemble mean plot saved to:", output_file_mean, "\n")
-# print(p_mean)
-# 
+ cat("Ensemble mean plot saved to:", output_file_mean, "\n")
+ print(p_mean)
+#
 # ## PLOT 2: Model Spread/Range
 # cat("\nCreating model spread/range map...\n")
-# 
+#
 # p_range <- ggplot() +
 #   geom_contour_filled(data = grid_range, aes(x = lon, y = lat, z = temp), bins = 15) +
-#   geom_contour(data = grid_range, aes(x = lon, y = lat, z = temp), 
+#   geom_contour(data = grid_range, aes(x = lon, y = lat, z = temp),
 #                color = "black", alpha = 0.3, bins = 15) +
 #   geom_sf(data = world_cropped, fill = NA, color = "black", linewidth = 0.5) +
 #   coord_sf(xlim = c(lon_min, lon_max), ylim = c(lat_min, lat_max), expand = FALSE) +
 #   labs(
 #     title = paste0(degree, "_", temp_var, "_", "Range (Max - Min)"),
-#     subtitle = paste0("Region: ", lon_min, "°E to ", lon_max, "°E, ", 
+#     subtitle = paste0("Region: ", lon_min, "°E to ", lon_max, "°E, ",
 #                       lat_min, "°N to ", lat_max, "°N"),
 #     x = "Longitude",
 #     y = "Latitude",
@@ -283,7 +293,7 @@ writeRaster(ensemble_mean_r, file = paste0(degree, "_", temp_var, "_", stat, "_"
 #     panel.grid.major = element_line(color = "gray90", linewidth = 0.3)
 #   ) +
 #   scale_fill_viridis_d(option = "cividis")
-# 
+#
 # ggsave(output_file_range, plot = p_range, width = 10, height = 8, dpi = 300)
 # cat("Model spread plot saved to:", output_file_range, "\n")
 # print(p_range)

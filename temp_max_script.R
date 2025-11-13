@@ -12,13 +12,13 @@ library(sf)
 
 # Input file path
 # folder name
-var <- "Tw"
+var <- "Ta"
 
 # Variable name 
-temp_var <- "Tw"  
+temp_var <- "tas"  
 
 # Degrees
-degree <- "4deg"
+degree <- "2deg"
 
 # Sats
 stat <- "3hrmax"
@@ -29,11 +29,25 @@ directory <- "C:/Users/corin/OneDrive/Documents/GitHub/heatwave_plots"
 nc_files <- list.files(path = paste0(directory, "/", degree,"/",var), 
                        pattern = "*.nc", full.names = TRUE)
 
+
+#### MAKE SURE TO CHANGE REGION IN RASTER STEP 3
+
 # Region of interest - Bangladesh
 lon_min <- 87  # Western boundary
 lon_max <- 94   # Eastern boundary
 lat_min <- 19    # Southern boundary
 lat_max <- 27     # Northern boundary
+
+Bang <- c(87, 94, 19, 27)
+
+# Region of interest - UAE
+#lon_min <- 45  # Western boundary
+#lon_max <- 60   # Eastern boundary
+#lat_min <- 20    # Southern boundary
+#lat_max <- 30     # Northern boundary
+
+UAE <- c(45, 60, 20, 30)
+
 
 # Output files
 output_file_mean <- paste0(degree, "_", temp_var, "_", stat, "_", "climate_contour_map_ensemble.png")
@@ -138,7 +152,7 @@ for (i in seq_along(nc_files)) {
   nc_close(nc_data)
   
   # Calculate temporal max for this model
-temp_max <- apply(temp_subset, c(1, 2, 3), max, na.rm = TRUE)
+temp_max <- apply(temp_subset, c(1, 2), max, na.rm = TRUE)
 
   # Store the temporal average for this model
   model_data_list[[i]] <- temp_max
@@ -176,7 +190,7 @@ cat("Model array dimensions:", dim(model_array), "\n")
 ensemble_max <- temp_max
 ensemble_max <- ensemble_max - constant_value
 
-temp_min <- apply(temp_subset, c(1, 2, 3), min, na.rm = TRUE)
+temp_min <- apply(temp_subset, c(1, 2), min, na.rm = TRUE)
 
 ensemble_min <- temp_min
 ensemble_min <- ensemble_min - constant_value
@@ -194,7 +208,7 @@ cat("\nsaving data as a raster...\n")
 
 library(terra)
 ensemble_max_r <- rast(aperm(ensemble_max))
-ext(ensemble_max_r) <- c(87, 94, 19, 27)
+ext(ensemble_max_r) <- Bang
 crs(ensemble_max_r) <- "EPSG:4326"
 writeRaster(ensemble_max_r, file = paste0(degree, "_", temp_var, "_", stat, "_", ".tiff"), overwrite=TRUE)
 
@@ -207,9 +221,9 @@ writeRaster(ensemble_max_r, file = paste0(degree, "_", temp_var, "_", stat, "_",
 # cat("\nPreparing ensemble data for plotting...\n")
 # 
 # # Create a data frame for ensemble mean
-# grid_max <- expand.grid(lon = lon_subset, lat = lat_subset)
-# grid_max$temp <- as.vector(ensemble_max)
-# grid_max <- grid_max[!is.na(grid_max$temp), ]
+ grid_max <- expand.grid(lon = lon_subset, lat = lat_subset)
+ grid_max$temp <- as.vector(ensemble_max)
+ grid_max <- grid_max[!is.na(grid_max$temp), ]
 # 
 # # Prepare range data
 # grid_range <- expand.grid(lon = lon_subset, lat = lat_subset)
@@ -222,40 +236,40 @@ writeRaster(ensemble_max_r, file = paste0(degree, "_", temp_var, "_", stat, "_",
 # # ---------------------------------------------------
 # 
 # # Get country boundaries (shared across all plots)
-# world <- ne_countries(scale = "medium", returnclass = "sf")
-# world_cropped <- st_crop(world, xmin = lon_min, xmax = lon_max, 
-#                          ymin = lat_min, ymax = lat_max)
+ world <- ne_countries(scale = "medium", returnclass = "sf")
+ world_cropped <- st_crop(world, xmin = lon_min, xmax = lon_max, 
+                          ymin = lat_min, ymax = lat_max)
+ 
+ ## PLOT 1: Ensemble Max
+ cat("Creating 3hr ensemble max contour map...\n")
 # 
-# ## PLOT 1: Ensemble Max
-# cat("Creating 3hr ensemble max contour map...\n")
-# 
-# p_mean <- ggplot() +
-#   geom_contour_filled(data = grid_max, aes(x = lon, y = lat, z = temp), bins = 20) +
-#   geom_contour(data = grid_max, aes(x = lon, y = lat, z = temp), 
-#                color = "black", alpha = 0.3) +
-#   geom_sf(data = world_cropped, fill = NA, color = "black", linewidth = 0.5) +
-#   coord_sf(xlim = c(lon_min, lon_max), ylim = c(lat_min, lat_max), expand = FALSE) +
-#   labs(
-#     title = paste0("3 hrly Max Wet Bulb Global Temperature Multi-Model Ensemble Mean"),
-#     subtitle = paste0("Region: ", lon_min, "°E to ", lon_max, "°E, ", 
-#                       lat_min, "°N to ", lat_max, "°N"),
-#     x = "Longitude",
-#     y = "Latitude",
-#     fill = "Temperature\n (°K)"
-#   ) +
-#   theme_minimal() +
-#   theme(
-#     plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-#     plot.subtitle = element_text(hjust = 0.5, size = 10),
-#     legend.position = "right",
-#     panel.background = element_rect(fill = "white"),
-#     panel.grid.major = element_line(color = "gray90", linewidth = 0.3)
-#   ) +
-#   scale_fill_viridis_d(option = "plasma")
-# 
+ p_mean <- ggplot() +
+   geom_contour_filled(data = grid_max, aes(x = lon, y = lat, z = temp), bins = 20) +
+   geom_contour(data = grid_max, aes(x = lon, y = lat, z = temp), 
+                color = "black", alpha = 0.3) +
+   geom_sf(data = world_cropped, fill = NA, color = "black", linewidth = 0.5) +
+   coord_sf(xlim = c(lon_min, lon_max), ylim = c(lat_min, lat_max), expand = FALSE) +
+   labs(
+     title = paste0("3 hrly Max Wet Bulb Global Temperature Multi-Model Ensemble Mean"),
+     subtitle = paste0("Region: ", lon_min, "°E to ", lon_max, "°E, ", 
+                       lat_min, "°N to ", lat_max, "°N"),
+     x = "Longitude",
+     y = "Latitude",
+     fill = "Temperature\n (°K)"
+   ) +
+   theme_minimal() +
+   theme(
+     plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+     plot.subtitle = element_text(hjust = 0.5, size = 10),
+     legend.position = "right",
+     panel.background = element_rect(fill = "white"),
+     panel.grid.major = element_line(color = "gray90", linewidth = 0.3)
+   ) +
+   scale_fill_viridis_d(option = "plasma")
+ 
 # ggsave(output_file_mean, plot = p_mean, width = 10, height = 8, dpi = 300)
-# cat("Ensemble mean plot saved to:", output_file_mean, "\n")
-# print(p_mean)
+ cat("Ensemble mean plot saved to:", output_file_mean, "\n")
+ print(p_mean)
 # 
 # ## PLOT 2: Model Spread/Range
 # cat("\nCreating model spread/range map...\n")
